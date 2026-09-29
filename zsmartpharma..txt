@@ -1,0 +1,2459 @@
+REPORT zsmartpharma.
+
+*---------------------------------------------------------------------*
+* SMARTPHARMA
+* Wholesale Pharmacy Management System
+*
+* Technology:
+* ABAP 7.4
+* Selection Screens
+* Open SQL
+* CL_SALV_TABLE
+*
+* Main Modules:
+* 1. Customer
+* 2. Vendor
+* 3. Purchase
+* 4. Sales / Billing
+* 5. Stock
+* 6. Dashboard
+*---------------------------------------------------------------------*
+
+*---------------------------------------------------------------------*
+* MAIN MENU
+*---------------------------------------------------------------------*
+
+PARAMETERS:
+  p_cust RADIOBUTTON GROUP gmn DEFAULT 'X',
+  p_vend RADIOBUTTON GROUP gmn,
+  p_pur  RADIOBUTTON GROUP gmn,
+  p_sale RADIOBUTTON GROUP gmn,
+  p_stk  RADIOBUTTON GROUP gmn,
+  p_dash RADIOBUTTON GROUP gmn.
+
+*---------------------------------------------------------------------*
+* CUSTOMER MENU
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1100.
+
+PARAMETERS:
+  p_cdsp RADIOBUTTON GROUP gcu DEFAULT 'X',
+  p_chis RADIOBUTTON GROUP gcu,
+  p_ccre RADIOBUTTON GROUP gcu.
+
+SELECTION-SCREEN END OF SCREEN 1100.
+
+*---------------------------------------------------------------------*
+* CUSTOMER CREATE
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1110.
+
+PARAMETERS:
+  p_cid  TYPE char10,
+  p_cnam TYPE char40,
+  p_ccon TYPE char40,
+  p_cmob TYPE char15,
+  p_cgst TYPE char15,
+  p_cadd TYPE char100,
+  p_ctyp TYPE char20.
+
+SELECTION-SCREEN END OF SCREEN 1110.
+
+*---------------------------------------------------------------------*
+* VENDOR MENU
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1200.
+
+PARAMETERS:
+  p_vdsp RADIOBUTTON GROUP gve DEFAULT 'X',
+  p_vcre RADIOBUTTON GROUP gve.
+
+SELECTION-SCREEN END OF SCREEN 1200.
+
+*---------------------------------------------------------------------*
+* VENDOR CREATE
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1210.
+
+PARAMETERS:
+  p_vid  TYPE char10,
+  p_vnam TYPE char40,
+  p_vcon TYPE char40,
+  p_vmob TYPE char15,
+  p_vgst TYPE char15,
+  p_vadd TYPE char100.
+
+SELECTION-SCREEN END OF SCREEN 1210.
+
+*---------------------------------------------------------------------*
+* PURCHASE MENU
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1300.
+
+PARAMETERS:
+  p_pdsp RADIOBUTTON GROUP gpu DEFAULT 'X',
+  p_pdet RADIOBUTTON GROUP gpu,
+  p_pcre RADIOBUTTON GROUP gpu.
+
+SELECTION-SCREEN END OF SCREEN 1300.
+
+*---------------------------------------------------------------------*
+* PURCHASE CREATE
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1310.
+
+PARAMETERS:
+  p_pvid TYPE char10,
+  p_pmat TYPE char18,
+  p_pbat TYPE char10,
+  p_pqty TYPE p DECIMALS 3,
+  p_puni TYPE char3,
+  p_pprc TYPE p DECIMALS 2,
+  p_pspr TYPE p DECIMALS 2,
+  p_pcur TYPE char5 DEFAULT 'INR'.
+
+SELECTION-SCREEN END OF SCREEN 1310.
+
+*---------------------------------------------------------------------*
+* SALES / BILLING MENU
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1400.
+
+PARAMETERS:
+  p_sdsp RADIOBUTTON GROUP gsa DEFAULT 'X',
+  p_sdet RADIOBUTTON GROUP gsa,
+  p_scre RADIOBUTTON GROUP gsa.
+
+SELECTION-SCREEN END OF SCREEN 1400.
+
+*---------------------------------------------------------------------*
+* BILLING SCREEN
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1410.
+
+PARAMETERS:
+  p_bmob TYPE char15,
+  p_bnam TYPE char40,
+  p_bcon TYPE char40,
+  p_bgst TYPE char15,
+  p_badd TYPE char100,
+  p_btyp TYPE char20,
+  p_bcur TYPE char5 DEFAULT 'INR'.
+
+PARAMETERS:
+  p_bm1 TYPE char18,
+  p_bb1 TYPE char10,
+  p_bq1 TYPE p DECIMALS 3,
+
+  p_bm2 TYPE char18,
+  p_bb2 TYPE char10,
+  p_bq2 TYPE p DECIMALS 3,
+
+  p_bm3 TYPE char18,
+  p_bb3 TYPE char10,
+  p_bq3 TYPE p DECIMALS 3.
+
+SELECTION-SCREEN END OF SCREEN 1410.
+
+*---------------------------------------------------------------------*
+* STOCK MENU
+*---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF SCREEN 1500.
+
+PARAMETERS:
+  p_stall  RADIOBUTTON GROUP gst DEFAULT 'X',
+  p_stlow  RADIOBUTTON GROUP gst,
+  p_stnear RADIOBUTTON GROUP gst,
+  p_stexp  RADIOBUTTON GROUP gst.
+
+SELECTION-SCREEN END OF SCREEN 1500.
+
+*---------------------------------------------------------------------*
+* TYPES
+*---------------------------------------------------------------------*
+
+TYPES:
+  BEGIN OF ty_pdet,
+    purchase_id    TYPE char12,
+    vendor_id      TYPE char10,
+    purchase_date  TYPE dats,
+    currency       TYPE char5,
+    header_amount  TYPE p LENGTH 8 DECIMALS 2,
+    item_no        TYPE char6,
+    matnr          TYPE char18,
+    batch_no       TYPE char10,
+    quantity       TYPE p LENGTH 8 DECIMALS 3,
+    unit           TYPE char3,
+    purchase_price TYPE p LENGTH 8 DECIMALS 2,
+    item_amount    TYPE p LENGTH 8 DECIMALS 2,
+  END OF ty_pdet.
+
+TYPES:
+  BEGIN OF ty_sdet,
+    sales_id       TYPE char12,
+    customer_id    TYPE char10,
+    sales_date     TYPE dats,
+    currency       TYPE char5,
+    header_amount  TYPE p LENGTH 8 DECIMALS 2,
+    item_no        TYPE char6,
+    matnr          TYPE char18,
+    batch_no       TYPE char10,
+    quantity       TYPE p LENGTH 8 DECIMALS 3,
+    unit           TYPE char3,
+    sales_price    TYPE p LENGTH 8 DECIMALS 2,
+    item_amount    TYPE p LENGTH 8 DECIMALS 2,
+  END OF ty_sdet.
+
+TYPES:
+  BEGIN OF ty_chis,
+    customer_id    TYPE char10,
+    customer_name  TYPE char40,
+    mobile         TYPE char15,
+    sales_id       TYPE char12,
+    sales_date     TYPE dats,
+    matnr          TYPE char18,
+    batch_no       TYPE char10,
+    quantity       TYPE p LENGTH 8 DECIMALS 3,
+    unit           TYPE char3,
+    sales_price    TYPE p LENGTH 8 DECIMALS 2,
+    item_amount    TYPE p LENGTH 8 DECIMALS 2,
+  END OF ty_chis.
+
+TYPES:
+  BEGIN OF ty_stock,
+    mandt          TYPE mandt,
+    matnr          TYPE char18,
+    batch_no       TYPE char10,
+    quantity       TYPE p LENGTH 8 DECIMALS 3,
+    unit           TYPE char3,
+    purchase_price TYPE p LENGTH 8 DECIMALS 2,
+    sales_price    TYPE p LENGTH 8 DECIMALS 2,
+    expiry_date    TYPE dats,
+    updated_on     TYPE dats,
+    status         TYPE char20,
+  END OF ty_stock.
+
+TYPES:
+  BEGIN OF ty_dash,
+    description TYPE char40,
+    value       TYPE char20,
+  END OF ty_dash.
+
+*---------------------------------------------------------------------*
+* INTERNAL TABLES
+*---------------------------------------------------------------------*
+
+DATA:
+  gt_customer TYPE STANDARD TABLE OF zsp_customer,
+  gt_vendor   TYPE STANDARD TABLE OF zsp_vendor,
+  gt_phdr     TYPE STANDARD TABLE OF zsp_purchase_hdr,
+  gt_pdet     TYPE STANDARD TABLE OF ty_pdet,
+  gt_shdr     TYPE STANDARD TABLE OF zsp_sales_hdr,
+  gt_sdet     TYPE STANDARD TABLE OF ty_sdet,
+  gt_chis     TYPE STANDARD TABLE OF ty_chis,
+  gt_stock    TYPE STANDARD TABLE OF ty_stock,
+  gt_dash     TYPE STANDARD TABLE OF ty_dash.
+
+*---------------------------------------------------------------------*
+* WORK AREAS
+*---------------------------------------------------------------------*
+
+DATA:
+  gs_customer TYPE zsp_customer,
+  gs_vendor   TYPE zsp_vendor,
+  gs_phdr     TYPE zsp_purchase_hdr,
+  gs_pitem    TYPE zsp_purch_item,
+  gs_shdr     TYPE zsp_sales_hdr,
+  gs_sitem    TYPE zsp_sales_item,
+  gs_stockdb  TYPE zsp_inv_stock.
+
+*---------------------------------------------------------------------*
+* START OF SELECTION
+*---------------------------------------------------------------------*
+
+START-OF-SELECTION.
+
+  IF p_cust = 'X'.
+
+    CALL SELECTION-SCREEN 1100.
+
+    IF sy-subrc = 0.
+
+      IF p_cdsp = 'X'.
+
+        PERFORM customer_display.
+
+      ELSEIF p_chis = 'X'.
+
+        PERFORM customer_history.
+
+      ELSEIF p_ccre = 'X'.
+
+        CALL SELECTION-SCREEN 1110.
+
+        IF sy-subrc = 0.
+          PERFORM customer_create.
+        ENDIF.
+
+      ENDIF.
+
+    ENDIF.
+
+  ELSEIF p_vend = 'X'.
+
+    CALL SELECTION-SCREEN 1200.
+
+    IF sy-subrc = 0.
+
+      IF p_vdsp = 'X'.
+
+        PERFORM vendor_display.
+
+      ELSEIF p_vcre = 'X'.
+
+        CALL SELECTION-SCREEN 1210.
+
+        IF sy-subrc = 0.
+          PERFORM vendor_create.
+        ENDIF.
+
+      ENDIF.
+
+    ENDIF.
+
+  ELSEIF p_pur = 'X'.
+
+    CALL SELECTION-SCREEN 1300.
+
+    IF sy-subrc = 0.
+
+      IF p_pdsp = 'X'.
+
+        PERFORM purchase_display.
+
+      ELSEIF p_pdet = 'X'.
+
+        PERFORM purchase_details.
+
+      ELSEIF p_pcre = 'X'.
+
+        CALL SELECTION-SCREEN 1310.
+
+        IF sy-subrc = 0.
+          PERFORM purchase_create.
+        ENDIF.
+
+      ENDIF.
+
+    ENDIF.
+
+  ELSEIF p_sale = 'X'.
+
+    CALL SELECTION-SCREEN 1400.
+
+    IF sy-subrc = 0.
+
+      IF p_sdsp = 'X'.
+
+        PERFORM sales_display.
+
+      ELSEIF p_sdet = 'X'.
+
+        PERFORM sales_details.
+
+      ELSEIF p_scre = 'X'.
+
+        CALL SELECTION-SCREEN 1410.
+
+        IF sy-subrc = 0.
+          PERFORM billing_create.
+        ENDIF.
+
+      ENDIF.
+
+    ENDIF.
+
+  ELSEIF p_stk = 'X'.
+
+    CALL SELECTION-SCREEN 1500.
+
+    IF sy-subrc = 0.
+
+      IF p_stall = 'X'.
+
+        PERFORM stock_display USING 'ALL'.
+
+      ELSEIF p_stlow = 'X'.
+
+        PERFORM stock_display USING 'LOW'.
+
+      ELSEIF p_stnear = 'X'.
+
+        PERFORM stock_display USING 'NEAR'.
+
+      ELSEIF p_stexp = 'X'.
+
+        PERFORM stock_display USING 'EXP'.
+
+      ENDIF.
+
+    ENDIF.
+
+  ELSEIF p_dash = 'X'.
+
+    PERFORM dashboard_display.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* CUSTOMER DISPLAY
+*---------------------------------------------------------------------*
+
+FORM customer_display.
+
+  CLEAR gt_customer.
+
+  SELECT *
+    FROM zsp_customer
+    INTO TABLE @gt_customer.
+
+  IF gt_customer IS INITIAL.
+
+    MESSAGE 'No customer data found.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  TRY.
+
+      DATA lo_customer TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_customer
+        CHANGING
+          t_table      = gt_customer ).
+
+      lo_customer->get_functions( )->set_all( abap_true ).
+
+      lo_customer->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_customer.
+
+      lo_customer->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_customer->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA CUSTOMER MASTER' ).
+
+      lo_customer->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_customer).
+
+      MESSAGE lx_customer->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* CUSTOMER HISTORY
+*---------------------------------------------------------------------*
+
+FORM customer_history.
+
+  CLEAR gt_chis.
+
+  SELECT
+    c~customer_id,
+    c~customer_name,
+    c~mobile,
+    h~sales_id,
+    h~sales_date,
+    i~matnr,
+    i~batch_no,
+    i~quantity,
+    i~unit,
+    i~sales_price,
+    i~total_amount AS item_amount
+    FROM zsp_customer AS c
+    INNER JOIN zsp_sales_hdr AS h
+      ON c~customer_id = h~customer_id
+    INNER JOIN zsp_sales_item AS i
+      ON h~sales_id = i~sales_id
+    INTO CORRESPONDING FIELDS OF TABLE @gt_chis.
+
+  IF gt_chis IS INITIAL.
+
+    MESSAGE 'No customer purchase history found.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  TRY.
+
+      DATA lo_chis TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_chis
+        CHANGING
+          t_table      = gt_chis ).
+
+      lo_chis->get_functions( )->set_all( abap_true ).
+
+      lo_chis->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_chis.
+
+      lo_chis->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_chis->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA CUSTOMER PURCHASE HISTORY' ).
+
+      lo_chis->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_chis).
+
+      MESSAGE lx_chis->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* CUSTOMER CREATE
+*---------------------------------------------------------------------*
+
+FORM customer_create.
+
+  DATA:
+    lv_count TYPE i,
+    lv_id    TYPE char10.
+
+  IF p_cnam IS INITIAL.
+
+    MESSAGE 'Enter customer name.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_cmob IS INITIAL.
+
+    MESSAGE 'Enter customer mobile number.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  SELECT SINGLE *
+    FROM zsp_customer
+    INTO @gs_customer
+    WHERE mobile = @p_cmob.
+
+  IF sy-subrc = 0.
+
+    MESSAGE 'Customer with this mobile number already exists.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  SELECT COUNT( * )
+    FROM zsp_customer
+    INTO @lv_count.
+
+  lv_count = lv_count + 1.
+
+  lv_id = |C{ lv_count }|.
+
+  CLEAR gs_customer.
+
+  gs_customer-mandt = sy-mandt.
+  gs_customer-customer_id = lv_id.
+  gs_customer-customer_name = p_cnam.
+  gs_customer-contact_person = p_ccon.
+  gs_customer-mobile = p_cmob.
+  gs_customer-gst_number = p_cgst.
+  gs_customer-address = p_cadd.
+  gs_customer-customer_type = p_ctyp.
+  gs_customer-created_on = sy-datum.
+
+  INSERT zsp_customer FROM @gs_customer.
+
+  IF sy-subrc = 0.
+
+    COMMIT WORK AND WAIT.
+
+    MESSAGE 'Customer created successfully.' TYPE 'S'.
+
+  ELSE.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'Customer creation failed.' TYPE 'S'.
+
+  ENDIF.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* VENDOR DISPLAY
+*---------------------------------------------------------------------*
+
+FORM vendor_display.
+
+  CLEAR gt_vendor.
+
+  SELECT *
+    FROM zsp_vendor
+    INTO TABLE @gt_vendor.
+
+  IF gt_vendor IS INITIAL.
+
+    MESSAGE 'No vendor data found.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  TRY.
+
+      DATA lo_vendor TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_vendor
+        CHANGING
+          t_table      = gt_vendor ).
+
+      lo_vendor->get_functions( )->set_all( abap_true ).
+
+      lo_vendor->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_vendor.
+
+      lo_vendor->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_vendor->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA VENDOR MASTER' ).
+
+      lo_vendor->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_vendor).
+
+      MESSAGE lx_vendor->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* VENDOR CREATE
+*---------------------------------------------------------------------*
+
+FORM vendor_create.
+
+  DATA:
+    lv_count TYPE i,
+    lv_id    TYPE char10.
+
+  IF p_vnam IS INITIAL.
+
+    MESSAGE 'Enter vendor name.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_vmob IS INITIAL.
+
+    MESSAGE 'Enter vendor mobile number.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  SELECT SINGLE *
+    FROM zsp_vendor
+    INTO @gs_vendor
+    WHERE mobile = @p_vmob.
+
+  IF sy-subrc = 0.
+
+    MESSAGE 'Vendor with this mobile number already exists.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  SELECT COUNT( * )
+    FROM zsp_vendor
+    INTO @lv_count.
+
+  lv_count = lv_count + 1.
+
+  lv_id = |V{ lv_count }|.
+
+  CLEAR gs_vendor.
+
+  gs_vendor-mandt = sy-mandt.
+  gs_vendor-vendor_id = lv_id.
+  gs_vendor-vendor_name = p_vnam.
+  gs_vendor-contact_person = p_vcon.
+  gs_vendor-mobile = p_vmob.
+  gs_vendor-gst_number = p_vgst.
+  gs_vendor-address = p_vadd.
+  gs_vendor-created_on = sy-datum.
+
+  INSERT zsp_vendor FROM @gs_vendor.
+
+  IF sy-subrc = 0.
+
+    COMMIT WORK AND WAIT.
+
+    MESSAGE 'Vendor created successfully.' TYPE 'S'.
+
+  ELSE.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'Vendor creation failed.' TYPE 'S'.
+
+  ENDIF.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* PURCHASE DISPLAY
+*---------------------------------------------------------------------*
+
+FORM purchase_display.
+
+  CLEAR gt_phdr.
+
+  SELECT *
+    FROM zsp_purchase_hdr
+    INTO TABLE @gt_phdr.
+
+  IF gt_phdr IS INITIAL.
+
+    MESSAGE 'No purchase data found.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  TRY.
+
+      DATA lo_purchase TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_purchase
+        CHANGING
+          t_table      = gt_phdr ).
+
+      lo_purchase->get_functions( )->set_all( abap_true ).
+
+      lo_purchase->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_purchase.
+
+      lo_purchase->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_purchase->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA PURCHASE HEADER' ).
+
+      lo_purchase->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_purchase).
+
+      MESSAGE lx_purchase->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* PURCHASE DETAILS
+*---------------------------------------------------------------------*
+
+FORM purchase_details.
+
+  CLEAR gt_pdet.
+
+  SELECT
+    h~purchase_id,
+    h~vendor_id,
+    h~purchase_date,
+    h~currency,
+    h~total_amount AS header_amount,
+    i~item_no,
+    i~matnr,
+    i~batch_no,
+    i~quantity,
+    i~unit,
+    i~purchase_price,
+    i~total_amount AS item_amount
+    FROM zsp_purchase_hdr AS h
+    INNER JOIN zsp_purch_item AS i
+      ON h~purchase_id = i~purchase_id
+    INTO CORRESPONDING FIELDS OF TABLE @gt_pdet.
+
+  IF gt_pdet IS INITIAL.
+
+    MESSAGE 'No purchase detail data found.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  TRY.
+
+      DATA lo_pdet TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_pdet
+        CHANGING
+          t_table      = gt_pdet ).
+
+      lo_pdet->get_functions( )->set_all( abap_true ).
+
+      lo_pdet->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_pdet.
+
+      lo_pdet->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_pdet->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA PURCHASE DETAILS' ).
+
+      lo_pdet->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_pdet).
+
+      MESSAGE lx_pdet->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* PURCHASE CREATE
+*---------------------------------------------------------------------*
+
+FORM purchase_create.
+
+  DATA:
+    lv_count TYPE i,
+    lv_pid   TYPE char12,
+    lv_total TYPE p LENGTH 8 DECIMALS 2.
+
+  IF p_pvid IS INITIAL.
+
+    MESSAGE 'Enter vendor ID.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_pmat IS INITIAL.
+
+    MESSAGE 'Enter material number.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_pbat IS INITIAL.
+
+    MESSAGE 'Enter batch number.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_pqty <= 0.
+
+    MESSAGE 'Enter valid purchase quantity.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_pprc <= 0.
+
+    MESSAGE 'Enter valid purchase price.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_pspr <= 0.
+
+    MESSAGE 'Enter valid sales price.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  SELECT SINGLE *
+    FROM zsp_vendor
+    INTO @gs_vendor
+    WHERE vendor_id = @p_pvid.
+
+  IF sy-subrc <> 0.
+
+    MESSAGE 'Vendor ID does not exist.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  lv_total = p_pqty * p_pprc.
+
+  SELECT COUNT( * )
+    FROM zsp_purchase_hdr
+    INTO @lv_count.
+
+  lv_count = lv_count + 1.
+
+  lv_pid = |P{ lv_count }|.
+
+  CLEAR gs_phdr.
+
+  gs_phdr-mandt = sy-mandt.
+  gs_phdr-purchase_id = lv_pid.
+  gs_phdr-vendor_id = p_pvid.
+  gs_phdr-purchase_date = sy-datum.
+  gs_phdr-currency = p_pcur.
+  gs_phdr-total_amount = lv_total.
+  gs_phdr-created_on = sy-datum.
+
+  INSERT zsp_purchase_hdr FROM @gs_phdr.
+
+  IF sy-subrc <> 0.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'Purchase header creation failed.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  CLEAR gs_pitem.
+
+  gs_pitem-mandt = sy-mandt.
+  gs_pitem-purchase_id = lv_pid.
+  gs_pitem-item_no = '1'.
+  gs_pitem-matnr = p_pmat.
+  gs_pitem-batch_no = p_pbat.
+  gs_pitem-quantity = p_pqty.
+  gs_pitem-unit = p_puni.
+  gs_pitem-purchase_price = p_pprc.
+  gs_pitem-total_amount = lv_total.
+
+  INSERT zsp_purch_item FROM @gs_pitem.
+
+  IF sy-subrc <> 0.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'Purchase item creation failed.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* UPDATE OR CREATE STOCK
+*---------------------------------------------------------------------*
+
+  SELECT SINGLE *
+    FROM zsp_inv_stock
+    INTO @gs_stockdb
+    WHERE matnr = @p_pmat
+      AND batch_no = @p_pbat.
+
+  IF sy-subrc = 0.
+
+    gs_stockdb-quantity =
+      gs_stockdb-quantity + p_pqty.
+
+    gs_stockdb-purchase_price = p_pprc.
+    gs_stockdb-sales_price = p_pspr.
+    gs_stockdb-unit = p_puni.
+    gs_stockdb-updated_on = sy-datum.
+
+    MODIFY zsp_inv_stock FROM @gs_stockdb.
+
+  ELSE.
+
+    CLEAR gs_stockdb.
+
+    gs_stockdb-mandt = sy-mandt.
+    gs_stockdb-matnr = p_pmat.
+    gs_stockdb-batch_no = p_pbat.
+    gs_stockdb-quantity = p_pqty.
+    gs_stockdb-unit = p_puni.
+    gs_stockdb-purchase_price = p_pprc.
+    gs_stockdb-sales_price = p_pspr.
+    gs_stockdb-updated_on = sy-datum.
+
+    INSERT zsp_inv_stock FROM @gs_stockdb.
+
+  ENDIF.
+
+  IF sy-subrc = 0.
+
+    COMMIT WORK AND WAIT.
+
+    MESSAGE 'Purchase created and stock updated successfully.'
+      TYPE 'S'.
+
+  ELSE.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'Stock update failed.' TYPE 'S'.
+
+  ENDIF.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* SALES DISPLAY
+*---------------------------------------------------------------------*
+
+FORM sales_display.
+
+  CLEAR gt_shdr.
+
+  SELECT *
+    FROM zsp_sales_hdr
+    INTO TABLE @gt_shdr.
+
+  IF gt_shdr IS INITIAL.
+
+    MESSAGE 'No sales or billing data found.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  TRY.
+
+      DATA lo_sales TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_sales
+        CHANGING
+          t_table      = gt_shdr ).
+
+      lo_sales->get_functions( )->set_all( abap_true ).
+
+      lo_sales->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_sales.
+
+      lo_sales->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_sales->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA SALES AND BILLING' ).
+
+      lo_sales->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_sales).
+
+      MESSAGE lx_sales->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* SALES DETAILS
+*---------------------------------------------------------------------*
+
+FORM sales_details.
+
+  CLEAR gt_sdet.
+
+  SELECT
+    h~sales_id,
+    h~customer_id,
+    h~sales_date,
+    h~currency,
+    h~total_amount AS header_amount,
+    i~item_no,
+    i~matnr,
+    i~batch_no,
+    i~quantity,
+    i~unit,
+    i~sales_price,
+    i~total_amount AS item_amount
+    FROM zsp_sales_hdr AS h
+    INNER JOIN zsp_sales_item AS i
+      ON h~sales_id = i~sales_id
+    INTO CORRESPONDING FIELDS OF TABLE @gt_sdet.
+
+  IF gt_sdet IS INITIAL.
+
+    MESSAGE 'No sales detail data found.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  TRY.
+
+      DATA lo_sdet TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_sdet
+        CHANGING
+          t_table      = gt_sdet ).
+
+      lo_sdet->get_functions( )->set_all( abap_true ).
+
+      lo_sdet->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_sdet.
+
+      lo_sdet->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_sdet->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA BILL DETAILS' ).
+
+      lo_sdet->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_sdet).
+
+      MESSAGE lx_sdet->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* BILLING CREATE
+*---------------------------------------------------------------------*
+
+FORM billing_create.
+
+  DATA:
+    ls_customer TYPE zsp_customer,
+    ls_stock1   TYPE zsp_inv_stock,
+    ls_stock2   TYPE zsp_inv_stock,
+    ls_stock3   TYPE zsp_inv_stock,
+    lv_count    TYPE i,
+    lv_sid      TYPE char12,
+    lv_total    TYPE p LENGTH 8 DECIMALS 2,
+    lv_amt      TYPE p LENGTH 8 DECIMALS 2.
+
+*---------------------------------------------------------------------*
+* MOBILE NUMBER
+*---------------------------------------------------------------------*
+
+  IF p_bmob IS INITIAL.
+
+    MESSAGE 'Enter customer mobile number.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* CUSTOMER SEARCH
+*---------------------------------------------------------------------*
+
+  CLEAR ls_customer.
+
+  SELECT SINGLE *
+    FROM zsp_customer
+    INTO @ls_customer
+    WHERE mobile = @p_bmob.
+
+  IF sy-subrc = 0.
+
+*---------------------------------------------------------------------*
+* EXISTING CUSTOMER
+*---------------------------------------------------------------------*
+
+    MESSAGE 'Regular customer found. Existing customer will be used.'
+      TYPE 'S'.
+
+  ELSE.
+
+*---------------------------------------------------------------------*
+* NEW CUSTOMER
+*---------------------------------------------------------------------*
+
+    IF p_bnam IS INITIAL.
+
+      MESSAGE 'New customer: enter customer name.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    SELECT COUNT( * )
+      FROM zsp_customer
+      INTO @lv_count.
+
+    lv_count = lv_count + 1.
+
+    CLEAR ls_customer.
+
+    ls_customer-mandt = sy-mandt.
+
+    ls_customer-customer_id = |C{ lv_count }|.
+
+    ls_customer-customer_name = p_bnam.
+    ls_customer-contact_person = p_bcon.
+    ls_customer-mobile = p_bmob.
+    ls_customer-gst_number = p_bgst.
+    ls_customer-address = p_badd.
+    ls_customer-customer_type = p_btyp.
+    ls_customer-created_on = sy-datum.
+
+    INSERT zsp_customer FROM @ls_customer.
+
+    IF sy-subrc <> 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'New customer creation failed.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* MEDICINE 1
+*---------------------------------------------------------------------*
+
+  IF p_bm1 IS INITIAL.
+
+    MESSAGE 'Enter at least one medicine material number.' TYPE 'S'.
+
+    ROLLBACK WORK.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_bb1 IS INITIAL.
+
+    MESSAGE 'Enter batch number for first medicine.' TYPE 'S'.
+
+    ROLLBACK WORK.
+
+    RETURN.
+
+  ENDIF.
+
+  IF p_bq1 <= 0.
+
+    MESSAGE 'Enter valid quantity for first medicine.' TYPE 'S'.
+
+    ROLLBACK WORK.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* STOCK CHECK 1
+*---------------------------------------------------------------------*
+
+  SELECT SINGLE *
+    FROM zsp_inv_stock
+    INTO @ls_stock1
+    WHERE matnr = @p_bm1
+      AND batch_no = @p_bb1.
+
+  IF sy-subrc <> 0.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'First medicine and batch were not found in stock.'
+      TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+  IF ls_stock1-quantity < p_bq1.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'Insufficient stock for first medicine.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* MEDICINE 2
+*---------------------------------------------------------------------*
+
+  IF p_bm2 IS NOT INITIAL.
+
+    IF p_bb2 IS INITIAL.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Enter batch number for second medicine.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    IF p_bq2 <= 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Enter valid quantity for second medicine.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    SELECT SINGLE *
+      FROM zsp_inv_stock
+      INTO @ls_stock2
+      WHERE matnr = @p_bm2
+        AND batch_no = @p_bb2.
+
+    IF sy-subrc <> 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Second medicine and batch were not found in stock.'
+        TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    IF ls_stock2-quantity < p_bq2.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Insufficient stock for second medicine.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* MEDICINE 3
+*---------------------------------------------------------------------*
+
+  IF p_bm3 IS NOT INITIAL.
+
+    IF p_bb3 IS INITIAL.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Enter batch number for third medicine.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    IF p_bq3 <= 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Enter valid quantity for third medicine.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    SELECT SINGLE *
+      FROM zsp_inv_stock
+      INTO @ls_stock3
+      WHERE matnr = @p_bm3
+        AND batch_no = @p_bb3.
+
+    IF sy-subrc <> 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Third medicine and batch were not found in stock.'
+        TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    IF ls_stock3-quantity < p_bq3.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Insufficient stock for third medicine.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* BILL TOTAL
+*---------------------------------------------------------------------*
+
+  CLEAR lv_total.
+
+  lv_amt = p_bq1 * ls_stock1-sales_price.
+
+  lv_total = lv_total + lv_amt.
+
+  IF p_bm2 IS NOT INITIAL.
+
+    lv_amt = p_bq2 * ls_stock2-sales_price.
+
+    lv_total = lv_total + lv_amt.
+
+  ENDIF.
+
+  IF p_bm3 IS NOT INITIAL.
+
+    lv_amt = p_bq3 * ls_stock3-sales_price.
+
+    lv_total = lv_total + lv_amt.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* BILL NUMBER
+*---------------------------------------------------------------------*
+
+  SELECT COUNT( * )
+    FROM zsp_sales_hdr
+    INTO @lv_count.
+
+  lv_count = lv_count + 1.
+
+  lv_sid = |S{ lv_count }|.
+
+*---------------------------------------------------------------------*
+* SALES HEADER
+*---------------------------------------------------------------------*
+
+  CLEAR gs_shdr.
+
+  gs_shdr-mandt = sy-mandt.
+  gs_shdr-sales_id = lv_sid.
+  gs_shdr-customer_id = ls_customer-customer_id.
+  gs_shdr-sales_date = sy-datum.
+  gs_shdr-currency = p_bcur.
+  gs_shdr-total_amount = lv_total.
+  gs_shdr-created_on = sy-datum.
+
+  INSERT zsp_sales_hdr FROM @gs_shdr.
+
+  IF sy-subrc <> 0.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'Bill header creation failed.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* BILL ITEM 1
+*---------------------------------------------------------------------*
+
+  CLEAR gs_sitem.
+
+  gs_sitem-mandt = sy-mandt.
+  gs_sitem-sales_id = lv_sid.
+  gs_sitem-item_no = '1'.
+  gs_sitem-matnr = p_bm1.
+  gs_sitem-batch_no = p_bb1.
+  gs_sitem-quantity = p_bq1.
+  gs_sitem-unit = ls_stock1-unit.
+  gs_sitem-sales_price = ls_stock1-sales_price.
+  gs_sitem-total_amount =
+    p_bq1 * ls_stock1-sales_price.
+
+  INSERT zsp_sales_item FROM @gs_sitem.
+
+  IF sy-subrc <> 0.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'First bill item could not be saved.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* REDUCE STOCK 1
+*---------------------------------------------------------------------*
+
+  ls_stock1-quantity =
+    ls_stock1-quantity - p_bq1.
+
+  ls_stock1-updated_on = sy-datum.
+
+  MODIFY zsp_inv_stock FROM @ls_stock1.
+
+  IF sy-subrc <> 0.
+
+    ROLLBACK WORK.
+
+    MESSAGE 'First stock update failed.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* BILL ITEM 2
+*---------------------------------------------------------------------*
+
+  IF p_bm2 IS NOT INITIAL.
+
+    CLEAR gs_sitem.
+
+    gs_sitem-mandt = sy-mandt.
+    gs_sitem-sales_id = lv_sid.
+    gs_sitem-item_no = '2'.
+    gs_sitem-matnr = p_bm2.
+    gs_sitem-batch_no = p_bb2.
+    gs_sitem-quantity = p_bq2.
+    gs_sitem-unit = ls_stock2-unit.
+    gs_sitem-sales_price = ls_stock2-sales_price.
+    gs_sitem-total_amount =
+      p_bq2 * ls_stock2-sales_price.
+
+    INSERT zsp_sales_item FROM @gs_sitem.
+
+    IF sy-subrc <> 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Second bill item could not be saved.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    ls_stock2-quantity =
+      ls_stock2-quantity - p_bq2.
+
+    ls_stock2-updated_on = sy-datum.
+
+    MODIFY zsp_inv_stock FROM @ls_stock2.
+
+    IF sy-subrc <> 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Second stock update failed.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* BILL ITEM 3
+*---------------------------------------------------------------------*
+
+  IF p_bm3 IS NOT INITIAL.
+
+    CLEAR gs_sitem.
+
+    gs_sitem-mandt = sy-mandt.
+    gs_sitem-sales_id = lv_sid.
+    gs_sitem-item_no = '3'.
+    gs_sitem-matnr = p_bm3.
+    gs_sitem-batch_no = p_bb3.
+    gs_sitem-quantity = p_bq3.
+    gs_sitem-unit = ls_stock3-unit.
+    gs_sitem-sales_price = ls_stock3-sales_price.
+    gs_sitem-total_amount =
+      p_bq3 * ls_stock3-sales_price.
+
+    INSERT zsp_sales_item FROM @gs_sitem.
+
+    IF sy-subrc <> 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Third bill item could not be saved.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+    ls_stock3-quantity =
+      ls_stock3-quantity - p_bq3.
+
+    ls_stock3-updated_on = sy-datum.
+
+    MODIFY zsp_inv_stock FROM @ls_stock3.
+
+    IF sy-subrc <> 0.
+
+      ROLLBACK WORK.
+
+      MESSAGE 'Third stock update failed.' TYPE 'S'.
+
+      RETURN.
+
+    ENDIF.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* SAVE EVERYTHING
+*---------------------------------------------------------------------*
+
+  COMMIT WORK AND WAIT.
+
+*---------------------------------------------------------------------*
+* BILL SUCCESS
+*---------------------------------------------------------------------*
+
+  MESSAGE |Bill { lv_sid } generated successfully. Total: { lv_total } { p_bcur }|
+    TYPE 'S'.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* STOCK DISPLAY
+*---------------------------------------------------------------------*
+
+FORM stock_display USING pv_mode TYPE char4.
+
+  DATA:
+    lv_near TYPE dats.
+
+  CLEAR gt_stock.
+
+  lv_near = sy-datum + 30.
+
+  SELECT
+    mandt,
+    matnr,
+    batch_no,
+    quantity,
+    unit,
+    purchase_price,
+    sales_price,
+    expiry_date,
+    updated_on
+    FROM zsp_inv_stock
+    INTO CORRESPONDING FIELDS OF TABLE @gt_stock.
+
+  IF gt_stock IS INITIAL.
+
+    MESSAGE 'No stock data found.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* STATUS CALCULATION
+*---------------------------------------------------------------------*
+
+  LOOP AT gt_stock ASSIGNING FIELD-SYMBOL(<fs_stock>).
+
+    IF <fs_stock>-quantity <= 0.
+
+      <fs_stock>-status = 'LOW STOCK'.
+
+    ELSEIF <fs_stock>-expiry_date IS NOT INITIAL
+       AND <fs_stock>-expiry_date < sy-datum.
+
+      <fs_stock>-status = 'EXPIRED'.
+
+    ELSEIF <fs_stock>-quantity <= 10.
+
+      <fs_stock>-status = 'LOW STOCK'.
+
+    ELSEIF <fs_stock>-expiry_date IS NOT INITIAL
+       AND <fs_stock>-expiry_date <= lv_near.
+
+      <fs_stock>-status = 'NEAR EXPIRY'.
+
+    ELSE.
+
+      <fs_stock>-status = 'AVAILABLE'.
+
+    ENDIF.
+
+  ENDLOOP.
+
+*---------------------------------------------------------------------*
+* FILTER STOCK
+*---------------------------------------------------------------------*
+
+  IF pv_mode = 'LOW'.
+
+    DELETE gt_stock
+      WHERE status <> 'LOW STOCK'.
+
+  ELSEIF pv_mode = 'NEAR'.
+
+    DELETE gt_stock
+      WHERE status <> 'NEAR EXPIRY'.
+
+  ELSEIF pv_mode = 'EXP'.
+
+    DELETE gt_stock
+      WHERE status <> 'EXPIRED'.
+
+  ENDIF.
+
+  IF gt_stock IS INITIAL.
+
+    MESSAGE 'No records found for selected stock category.' TYPE 'S'.
+
+    RETURN.
+
+  ENDIF.
+
+*---------------------------------------------------------------------*
+* STOCK ALV
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      DATA lo_stock TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_stock
+        CHANGING
+          t_table      = gt_stock ).
+
+      lo_stock->get_functions( )->set_all( abap_true ).
+
+      lo_stock->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_stock.
+
+      lo_stock->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_stock->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA STOCK REPORT' ).
+
+      lo_stock->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_stock).
+
+      MESSAGE lx_stock->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* DASHBOARD
+*---------------------------------------------------------------------*
+
+FORM dashboard_display.
+
+  DATA:
+    lv_customers TYPE i,
+    lv_vendors   TYPE i,
+    lv_purchase  TYPE i,
+    lv_sales     TYPE i,
+    lv_stock     TYPE i,
+    lv_low       TYPE i,
+    lv_near      TYPE i,
+    lv_expired   TYPE i,
+    lv_near_date TYPE dats,
+    ls_dash      TYPE ty_dash.
+
+  CLEAR gt_dash.
+
+*---------------------------------------------------------------------*
+* COUNTS
+*---------------------------------------------------------------------*
+
+  SELECT COUNT( * )
+    FROM zsp_customer
+    INTO @lv_customers.
+
+  SELECT COUNT( * )
+    FROM zsp_vendor
+    INTO @lv_vendors.
+
+  SELECT COUNT( * )
+    FROM zsp_purchase_hdr
+    INTO @lv_purchase.
+
+  SELECT COUNT( * )
+    FROM zsp_sales_hdr
+    INTO @lv_sales.
+
+  SELECT COUNT( * )
+    FROM zsp_inv_stock
+    INTO @lv_stock.
+
+*---------------------------------------------------------------------*
+* LOW STOCK
+*---------------------------------------------------------------------*
+
+  SELECT COUNT( * )
+    FROM zsp_inv_stock
+    WHERE quantity <= 10
+    INTO @lv_low.
+
+*---------------------------------------------------------------------*
+* EXPIRY
+*---------------------------------------------------------------------*
+
+  lv_near_date = sy-datum + 30.
+
+  SELECT COUNT( * )
+    FROM zsp_inv_stock
+    WHERE expiry_date IS NOT INITIAL
+      AND expiry_date < @sy-datum
+    INTO @lv_expired.
+
+  SELECT COUNT( * )
+    FROM zsp_inv_stock
+    WHERE expiry_date IS NOT INITIAL
+      AND expiry_date >= @sy-datum
+      AND expiry_date <= @lv_near_date
+    INTO @lv_near.
+
+*---------------------------------------------------------------------*
+* DASHBOARD DATA
+*---------------------------------------------------------------------*
+
+  CLEAR ls_dash.
+
+  ls_dash-description = 'Total Customers'.
+  ls_dash-value = |{ lv_customers }|.
+
+  APPEND ls_dash TO gt_dash.
+
+  CLEAR ls_dash.
+
+  ls_dash-description = 'Total Vendors'.
+  ls_dash-value = |{ lv_vendors }|.
+
+  APPEND ls_dash TO gt_dash.
+
+  CLEAR ls_dash.
+
+  ls_dash-description = 'Total Purchases'.
+  ls_dash-value = |{ lv_purchase }|.
+
+  APPEND ls_dash TO gt_dash.
+
+  CLEAR ls_dash.
+
+  ls_dash-description = 'Total Sales Bills'.
+  ls_dash-value = |{ lv_sales }|.
+
+  APPEND ls_dash TO gt_dash.
+
+  CLEAR ls_dash.
+
+  ls_dash-description = 'Total Stock Batches'.
+  ls_dash-value = |{ lv_stock }|.
+
+  APPEND ls_dash TO gt_dash.
+
+  CLEAR ls_dash.
+
+  ls_dash-description = 'Low Stock Batches'.
+  ls_dash-value = |{ lv_low }|.
+
+  APPEND ls_dash TO gt_dash.
+
+  CLEAR ls_dash.
+
+  ls_dash-description = 'Near Expiry Batches'.
+  ls_dash-value = |{ lv_near }|.
+
+  APPEND ls_dash TO gt_dash.
+
+  CLEAR ls_dash.
+
+  ls_dash-description = 'Expired Batches'.
+  ls_dash-value = |{ lv_expired }|.
+
+  APPEND ls_dash TO gt_dash.
+
+*---------------------------------------------------------------------*
+* DASHBOARD ALV
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      DATA lo_dash TYPE REF TO cl_salv_table.
+
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table = lo_dash
+        CHANGING
+          t_table      = gt_dash ).
+
+      lo_dash->get_functions( )->set_all( abap_true ).
+
+      lo_dash->get_columns( )->set_optimize( abap_true ).
+
+      PERFORM set_alv_headers USING lo_dash.
+
+      lo_dash->get_display_settings(
+        )->set_striped_pattern( abap_true ).
+
+      lo_dash->get_display_settings(
+        )->set_list_header(
+        'SMARTPHARMA DASHBOARD' ).
+
+      lo_dash->display( ).
+
+    CATCH cx_salv_msg INTO DATA(lx_dash).
+
+      MESSAGE lx_dash->get_text( ) TYPE 'S'.
+
+  ENDTRY.
+
+ENDFORM.
+
+*---------------------------------------------------------------------*
+* ALV COLUMN HEADERS
+*---------------------------------------------------------------------*
+
+FORM set_alv_headers
+  USING
+    io_alv TYPE REF TO cl_salv_table.
+
+  DATA lo_col TYPE REF TO cl_salv_column.
+
+*---------------------------------------------------------------------*
+* CLIENT
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'MANDT' ).
+
+      lo_col->set_short_text( 'Client' ).
+      lo_col->set_medium_text( 'Client' ).
+      lo_col->set_long_text( 'Client' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* CUSTOMER ID
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'CUSTOMER_ID' ).
+
+      lo_col->set_short_text( 'Cust. ID' ).
+      lo_col->set_medium_text( 'Customer ID' ).
+      lo_col->set_long_text( 'Customer ID' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* CUSTOMER NAME
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'CUSTOMER_NAME' ).
+
+      lo_col->set_short_text( 'Name' ).
+      lo_col->set_medium_text( 'Customer Name' ).
+      lo_col->set_long_text( 'Customer Name' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* CONTACT PERSON
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'CONTACT_PERSON' ).
+
+      lo_col->set_short_text( 'Contact' ).
+      lo_col->set_medium_text( 'Contact Person' ).
+      lo_col->set_long_text( 'Contact Person' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* MOBILE
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'MOBILE' ).
+
+      lo_col->set_short_text( 'Mobile' ).
+      lo_col->set_medium_text( 'Mobile Number' ).
+      lo_col->set_long_text( 'Mobile Number' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* GST
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'GST_NUMBER' ).
+
+      lo_col->set_short_text( 'GST No.' ).
+      lo_col->set_medium_text( 'GST Number' ).
+      lo_col->set_long_text( 'GST Number' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* ADDRESS
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'ADDRESS' ).
+
+      lo_col->set_short_text( 'Address' ).
+      lo_col->set_medium_text( 'Address' ).
+      lo_col->set_long_text( 'Customer Address' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* CUSTOMER TYPE
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'CUSTOMER_TYPE' ).
+
+      lo_col->set_short_text( 'Type' ).
+      lo_col->set_medium_text( 'Customer Type' ).
+      lo_col->set_long_text( 'Customer Type' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* CREATED ON
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'CREATED_ON' ).
+
+      lo_col->set_short_text( 'Created' ).
+      lo_col->set_medium_text( 'Created On' ).
+      lo_col->set_long_text( 'Created On' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* VENDOR ID
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'VENDOR_ID' ).
+
+      lo_col->set_short_text( 'Vendor ID' ).
+      lo_col->set_medium_text( 'Vendor ID' ).
+      lo_col->set_long_text( 'Vendor ID' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* VENDOR NAME
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'VENDOR_NAME' ).
+
+      lo_col->set_short_text( 'Name' ).
+      lo_col->set_medium_text( 'Vendor Name' ).
+      lo_col->set_long_text( 'Vendor Name' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* PURCHASE ID
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'PURCHASE_ID' ).
+
+     lo_col->set_short_text( 'Purch. ID' ).
+      lo_col->set_medium_text( 'Purchase ID' ).
+      lo_col->set_long_text( 'Purchase ID' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* PURCHASE DATE
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'PURCHASE_DATE' ).
+
+      lo_col->set_short_text( 'Date' ).
+      lo_col->set_medium_text( 'Purchase Date' ).
+      lo_col->set_long_text( 'Purchase Date' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* CURRENCY
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'CURRENCY' ).
+
+      lo_col->set_short_text( 'Currency' ).
+      lo_col->set_medium_text( 'Currency' ).
+      lo_col->set_long_text( 'Currency' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* HEADER AMOUNT
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'HEADER_AMOUNT' ).
+
+      lo_col->set_short_text( 'Amount' ).
+      lo_col->set_medium_text( 'Header Amount' ).
+      lo_col->set_long_text( 'Header Amount' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* ITEM NUMBER
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'ITEM_NO' ).
+
+      lo_col->set_short_text( 'Item No.' ).
+      lo_col->set_medium_text( 'Item Number' ).
+      lo_col->set_long_text( 'Item Number' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* MATERIAL
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'MATNR' ).
+
+      lo_col->set_short_text( 'Material' ).
+      lo_col->set_medium_text( 'Material Number' ).
+      lo_col->set_long_text( 'Material Number' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* BATCH
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'BATCH_NO' ).
+
+      lo_col->set_short_text( 'Batch' ).
+      lo_col->set_medium_text( 'Batch Number' ).
+      lo_col->set_long_text( 'Batch Number' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* QUANTITY
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'QUANTITY' ).
+
+      lo_col->set_short_text( 'Quantity' ).
+      lo_col->set_medium_text( 'Quantity' ).
+      lo_col->set_long_text( 'Quantity' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* UNIT
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'UNIT' ).
+
+      lo_col->set_short_text( 'Unit' ).
+      lo_col->set_medium_text( 'Unit' ).
+      lo_col->set_long_text( 'Unit of Measure' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* PURCHASE PRICE
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'PURCHASE_PRICE' ).
+
+      lo_col->set_short_text( 'Price' ).
+      lo_col->set_medium_text( 'Purchase Price' ).
+      lo_col->set_long_text( 'Purchase Price' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* SALES PRICE
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'SALES_PRICE' ).
+
+      lo_col->set_short_text( 'Price' ).
+      lo_col->set_medium_text( 'Sales Price' ).
+      lo_col->set_long_text( 'Sales Price' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* ITEM AMOUNT
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'ITEM_AMOUNT' ).
+
+      lo_col->set_short_text( 'Amount' ).
+      lo_col->set_medium_text( 'Item Amount' ).
+      lo_col->set_long_text( 'Item Total Amount' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* SALES ID / BILL ID
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'SALES_ID' ).
+
+      lo_col->set_short_text( 'Bill ID' ).
+      lo_col->set_medium_text( 'Sales ID' ).
+      lo_col->set_long_text( 'Bill Number' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* SALES DATE
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'SALES_DATE' ).
+
+      lo_col->set_short_text( 'Date' ).
+      lo_col->set_medium_text( 'Sales Date' ).
+      lo_col->set_long_text( 'Sales Date' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* EXPIRY DATE
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'EXPIRY_DATE' ).
+
+      lo_col->set_short_text( 'Expiry' ).
+      lo_col->set_medium_text( 'Expiry Date' ).
+      lo_col->set_long_text( 'Medicine Expiry Date' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* UPDATED ON
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'UPDATED_ON' ).
+
+      lo_col->set_short_text( 'Updated' ).
+      lo_col->set_medium_text( 'Updated On' ).
+      lo_col->set_long_text( 'Stock Updated On' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* STATUS
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'STATUS' ).
+
+      lo_col->set_short_text( 'Status' ).
+      lo_col->set_medium_text( 'Stock Status' ).
+      lo_col->set_long_text( 'Current Stock Status' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* DESCRIPTION
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'DESCRIPTION' ).
+
+      lo_col->set_short_text( 'Desc.' ).
+      lo_col->set_medium_text( 'Description' ).
+      lo_col->set_long_text( 'Dashboard Description' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+*---------------------------------------------------------------------*
+* VALUE
+*---------------------------------------------------------------------*
+
+  TRY.
+
+      lo_col =
+        io_alv->get_columns( )->get_column( 'VALUE' ).
+
+      lo_col->set_short_text( 'Value' ).
+      lo_col->set_medium_text( 'Value' ).
+      lo_col->set_long_text( 'Dashboard Value' ).
+
+    CATCH cx_salv_not_found.
+  ENDTRY.
+
+ENDFORM.
